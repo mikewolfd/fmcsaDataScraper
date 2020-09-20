@@ -17,17 +17,22 @@ def task_runner(func, values, index, quantity=None, max_workers=16, chunk_size=1
             # logging.info('{}'.format(z.result()))
             index += len(items)
 
-def get_and_store(items, index):
+def get_and_store(items, index, *args, **kwargs):
     o = []
+    false_items = []
+    query = kwargs.get('query', {'index': {'$gte': index, '$lt': index + len(items)}})
     for _index, value in enumerate(items):
-        val = scrape.get_carrier_registration(value)
-        val['index'] = _index + index
-        o.append(val)
+        false_items.append({'carrier_id': value, 'loaded': False, 'index': _index + index})
     with mongo_storage.GetClient() as cli:
-        cli.insert_many(o)
+        cli.insert_many(false_items)
+        for _index, value in enumerate(items):
+            val = scrape.get_carrier_registration(value)
+            val['index'] = _index + index
+            o.append(mongo_storage.pymongo.ReplaceOne({'carrier_id': value}, val))
+        cli.bulk_write(o, ordered=False)
 
 
-def run_tasks(values, quantity=5000, max_workers=16):
+def run_tasks(values, quantity=5000, max_workers=16, *args, **kwargs):
     index = mongo_storage.getNextIndex()
     task_runner(get_and_store, values, index, quantity, max_workers)
 
@@ -36,3 +41,21 @@ def scrape_site(filepath, quantity=None, *args, **kwargs):
     census_data = pd.read_csv(filepath, encoding="ISO-8859-1")
     dot_numbers = census_data.DOT_NUMBER.to_list()
     run_tasks(dot_numbers, quantity, *args, **kwargs)
+
+def fill_failed(values, *args, **kwargs):
+    o =[]
+    with mongo_storage.GetClient() as cli:
+        for value in values:
+            val = scrape.get_carrier_registration(value)
+            val['loaded'] = True
+            o.append(mongo_storage.pymongo.UpdateOne({'carrier_id': value}, {"$set": val }))
+        cli.bulk_write(o, ordered=False)
+
+def fix_store():
+    with mongo_storage.GetClient() as cli:
+        failed = cli.aggregate([{'$match': {'loaded': False}}, {'$group': { "carrier_id": {"$push": "$carrier_id"}, "_id": None}}])
+    failed = list(failed)
+    if failed:
+        _ids = list(failed)[0].get('carrier_id')
+        return task_runner(fill_failed, _ids, index=0)
+    return False
