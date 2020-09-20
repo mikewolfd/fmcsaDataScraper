@@ -38,4 +38,10 @@ def create_index():
         cli.create_index([('carrier_id', pymongo.DESCENDING)], unique=True)
         cli.create_index([('index', pymongo.DESCENDING)], unique=True)
 
+
+def get_failed():
+    with GetClient() as cli:
+        failed = cli.find({'loaded': False})
+    return len(list(failed))
+
 create_index()

@@ -3,3 +3,4 @@ beautifulsoup4===4.9.1
 pandas===1.1.2
 peewee==3.13.3
 python-dotenv==0.14.0
+lxml==4.5.2
