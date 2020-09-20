@@ -3,10 +3,14 @@ from playhouse.pool import PooledSqliteDatabase
 from generate_data import task_runner
 # import logging
 import concurrent.futures
+import settings
 
 # logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-db = PooledSqliteDatabase('data/census_dot.db', max_connections=32,
+def get_name():
+   return '/'.join([settings.DATA_DIR, settings.DATABASENAME])
+
+db = PooledSqliteDatabase(get_name(), max_connections=32,
                           pragmas={
                               'journal_mode': 'wal',
                               'cache_size': -1 * 512000,  # 64MB
@@ -93,3 +97,5 @@ class CarrierFreight(BaseModel):
 def create_tables():
     with db:
         db.create_tables([Carrier, CarrierVehicles, CarrierFreight], safe=True)
+
+create_tables()

@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import re
+import settings
 
 
 def to_snakecase(string, regex):
@@ -75,6 +76,6 @@ def get_vehicle_type(soup):
 
 def get_carrier_registration(carrier_id):
     page = requests.get(
-        'https://ai.fmcsa.dot.gov/SMS/Carrier/{}/CarrierRegistration.aspx'.format(carrier_id)).text
+        settings.LINK.format(carrier_id)).text
     soup = BeautifulSoup(page, features="lxml")
     return {'carrier_id': carrier_id, 'cargo': get_cargo(soup), 'types': get_vehicle_type(soup)}

@@ -34,3 +34,5 @@ def create_index():
     with GetClient() as cli:
         cli.create_index([('carrier_id', pymongo.DESCENDING)], unique=True)
         cli.create_index([('index', pymongo.DESCENDING)], unique=True)
+
+create_index()

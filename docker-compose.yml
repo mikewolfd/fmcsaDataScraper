@@ -5,10 +5,12 @@ services:
   censusdot_mongo:
     image: mongo
     restart: always
+    env_file:
+      - .env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_ROOT_USERNAME: ${MONGOPWD}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGOUSER}
     volumes:
-      - ./data/mongodb:/data/db
+      - "${DATA_DIR}/mongodb:/data/db"
     ports:
       - "27017:27017"
