@@ -8,8 +8,8 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGOPWD}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGOUSER}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGOUSER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGOPWD}
     volumes:
       - "${DATA_DIR}/mongodb:/data/db"
     ports:

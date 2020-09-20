@@ -9,4 +9,9 @@ DATA_DIR = os.getenv("DATA_DIR")
 
 LINK = os.getenv("LINK")
 
-DATABASENAME = os.getenv("DATABASENAME") or ".".join([LOADING_FILE.split('/')[-1].split('.')[0],"db"])
+MONGOUSER = os.getenv("MONGOUSER")
+
+MONGOPWD = os.getenv("MONGOPWD")
+
+DATABASENAME = os.getenv("DATABASENAME") or ".".join(
+    [LOADING_FILE.split('/')[-1].split('.')[0], "db"])

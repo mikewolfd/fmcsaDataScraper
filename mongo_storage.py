@@ -1,6 +1,7 @@
 import pymongo
 
 from pymongo import MongoClient
+import settings
 
 class GetClient:
 
@@ -8,7 +9,7 @@ class GetClient:
         self.client=None
 
     def __enter__(self):
-        self.client = MongoClient(username="root", password="example")
+        self.client = MongoClient(username=settings.MONGOUSER, password=settings.MONGOPWD)
         return self.client.cen_store.records
     
     def __exit__(self, *args, **kwargs):
@@ -27,8 +28,10 @@ def getNextIndex():
                     }
                 ]
             )
-    val = list(pp)[0].get('maxIndex') 
-    return val + 1 if val else 0
+    index = list(pp)
+    if not index:
+        return 0
+    return index[0].get('maxIndex') + 1
         
 def create_index():
     with GetClient() as cli:
