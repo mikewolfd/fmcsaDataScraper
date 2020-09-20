@@ -2,12 +2,20 @@ import concurrent.futures
 import mongo_storage
 import pandas as pd
 import scrape
+from peewee import chunked
+# import logging
+# logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-
-def chunkify(lst, chunk_size=500):
-    for x in range(0, len(lst), chunk_size):
-        yield lst[x:x + chunk_size]
-
+def task_runner(func, values, index, quantity=None, max_workers=16, chunk_size=100, *args, **kwargs):
+    quant = index + quantity if quantity else None
+    vals = values[index:quant]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        for items in chunked(vals, chunk_size):
+            # logging.info('test {}'.format(len(items)))
+            kwargs['index'] = index
+            z = executor.submit(func, items, *args, **kwargs)
+            # logging.info('{}'.format(z.result()))
+            index += len(items)
 
 def get_and_store(items, index):
     o = []
@@ -18,16 +26,13 @@ def get_and_store(items, index):
     with mongo_storage.GetClient() as cli:
         cli.insert_many(o)
 
+
 def run_tasks(values, quantity=5000, max_workers=16):
     index = mongo_storage.getNextIndex()
-    vals = values[index:index+quantity]
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        for items in chunkify(vals, chunk_size=100):
-            executor.submit(get_and_store, items, index)
-            index += len(items)
+    task_runner(get_and_store, values, index, quantity, max_workers)
+
 
 def scrape_site(filepath, quantity=None, *args, **kwargs):
-    census_data = pd.read_csv(filepath, encoding = "ISO-8859-1")
+    census_data = pd.read_csv(filepath, encoding="ISO-8859-1")
     dot_numbers = census_data.DOT_NUMBER.to_list()
-    quant = quantity or len(dot_numbers) - mongo_storage.getNextIndex()
-    run_tasks(dot_numbers, quant, *args, **kwargs)
+    run_tasks(dot_numbers, quantity, *args, **kwargs)
