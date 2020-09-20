@@ -27,13 +27,10 @@ def getNextIndex():
                     }
                 ]
             )
-        val = list(pp)[0].get('maxIndex')
-        return val + 1 if val else 0
+    val = list(pp)[0].get('maxIndex') 
+    return val + 1 if val else 0
         
-def main():
+def create_index():
     with GetClient() as cli:
         cli.create_index([('carrier_id', pymongo.DESCENDING)], unique=True)
         cli.create_index([('index', pymongo.DESCENDING)], unique=True)
-
-if __name__ == "__main__" or __name__ == 'execution_methods':
-    main()
