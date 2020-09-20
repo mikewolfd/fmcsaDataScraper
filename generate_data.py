@@ -6,7 +6,10 @@ from peewee import chunked
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
 
-def task_runner(func, values, index, quantity=None, max_workers=16, chunk_size=100, *args, **kwargs):
+def task_runner(func, values, index=0, quantity=None, max_workers=16, chunk_size=100, *args, **kwargs):
+    """ 
+    This slices an array as needed, chunks it up, and launches tasks
+    """
     quant = index + quantity if quantity else None
     vals = values[index:quant]
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -20,6 +23,9 @@ def task_runner(func, values, index, quantity=None, max_workers=16, chunk_size=1
             index += len(items)
 
 def get_and_store(items, index, *args, **kwargs):
+    """ 
+    This is the primary task, it creates temp objects in mongo to maintain an index, gets the scraped data and inserts it into mongo
+    """
     o = []
     false_items = []
     query = kwargs.get('query', {'index': {'$gte': index, '$lt': index + len(items)}})
@@ -35,16 +41,25 @@ def get_and_store(items, index, *args, **kwargs):
 
 
 def run_tasks(values, quantity=5000, max_workers=16, *args, **kwargs):
+    """ 
+    This sets more reasonable debug variables, gets the most recent index
+    """
     index = mongo_storage.getNextIndex()
     task_runner(get_and_store, values, index, quantity, max_workers)
 
 
 def scrape_site(filepath, quantity=None, *args, **kwargs):
+    """ 
+    This imports the csv, pulls the column data and launches the tasks
+    """
     census_data = pd.read_csv(filepath, encoding="ISO-8859-1")
     dot_numbers = census_data.DOT_NUMBER.to_list()
     run_tasks(dot_numbers, quantity, *args, **kwargs)
 
 def fill_failed(values, *args, **kwargs):
+    """ 
+    This is the repair task, it retrys the scrape and updates exisiting 
+    """
     o =[]
     with mongo_storage.GetClient() as cli:
         for value in values:
@@ -54,6 +69,9 @@ def fill_failed(values, *args, **kwargs):
         cli.bulk_write(o, ordered=False)
 
 def fix_store():
+    """ 
+    This is the repair function, it finds all failed tasks and retrys loading the data
+    """
     with mongo_storage.GetClient() as cli:
         failed = cli.aggregate([{'$match': {'loaded': False}}, {'$group': { "carrier_id": {"$push": "$carrier_id"}, "_id": None}}])
     failed = list(failed)
