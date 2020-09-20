@@ -3,18 +3,20 @@ import mongo_storage
 import pandas as pd
 import scrape
 from peewee import chunked
-# import logging
-# logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
 
 def task_runner(func, values, index, quantity=None, max_workers=16, chunk_size=100, *args, **kwargs):
     quant = index + quantity if quantity else None
     vals = values[index:quant]
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         for items in chunked(vals, chunk_size):
-            # logging.info('test {}'.format(len(items)))
             kwargs['index'] = index
             z = executor.submit(func, items, *args, **kwargs)
-            # logging.info('{}'.format(z.result()))
+            try:
+                z.result()
+            except Exception as exec :
+                logging.info('{}'.format(exec))
             index += len(items)
 
 def get_and_store(items, index, *args, **kwargs):
