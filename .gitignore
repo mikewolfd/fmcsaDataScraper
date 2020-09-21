@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 # Local DIR
-/data
+data/*
+!/data/.gitkeep
