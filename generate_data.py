@@ -2,6 +2,7 @@ import concurrent.futures
 import mongo_storage
 import pandas as pd
 import scrape
+import time
 from peewee import chunked
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
@@ -11,15 +12,19 @@ def task_runner(func, values, index=0, quantity=None, max_workers=16, chunk_size
     This slices an array as needed, chunks it up, and launches tasks
     """
     quant = index + quantity if quantity else None
+    _index = index
     vals = values[index:quant]
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = set()
         for items in chunked(vals, chunk_size):
-            kwargs['index'] = index
-            z = executor.submit(func, items, *args, **kwargs)
+            kwargs['index'] = _index
+            futures.add(executor.submit(func, items, *args, **kwargs))
+            _index += len(items)
+        for fut in concurrent.futures.as_completed(futures):
             try:
-                z.result()
+                fut.result()
             except Exception as exec :
-                logging.info('{}'.format(exec))
+                raise
             index += len(items)
 
 def get_and_store(items, index, *args, **kwargs):
@@ -48,13 +53,25 @@ def run_tasks(values, quantity=5000, max_workers=16, *args, **kwargs):
     task_runner(get_and_store, values, index, quantity, max_workers)
 
 
-def scrape_site(filepath, quantity=None, *args, **kwargs):
+def scrape_site(filepath, quantity=None, max_tries=5, cooldown=5, *args, **kwargs):
     """ 
     This imports the csv, pulls the column data and launches the tasks
+    max_tries is for retry incase of connection or db access failure 
+    cooldown is in minutes
     """
     census_data = pd.read_csv(filepath, encoding="ISO-8859-1")
     dot_numbers = census_data.DOT_NUMBER.to_list()
-    run_tasks(dot_numbers, quantity, *args, **kwargs)
+    init = True
+    for i in range(max_tries):
+        try:
+            if not init:
+                time.sleep(cooldown*60)
+            run_tasks(dot_numbers, quantity, *args, **kwargs)
+            break
+        except Exception as exec:
+            logging.error('{}'.format(exec)) 
+            init = False
+            continue
 
 def fill_failed(values, *args, **kwargs):
     """ 
