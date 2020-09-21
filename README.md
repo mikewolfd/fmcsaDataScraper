@@ -47,4 +47,4 @@ TODO:
 testing
 csv exporting
 finish dockerizing the package
-
+memory optimization for the multiprocessing
