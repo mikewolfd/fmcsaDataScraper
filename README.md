@@ -47,7 +47,11 @@ To use:
     Run the build_sql from main.py to generate a sqlite3 file in the datadir.
 
 TODO:
+
     testing
+    
     csv exporting
+    
     finish dockerizing the package
+    
     memory optimization for the multiprocessing
