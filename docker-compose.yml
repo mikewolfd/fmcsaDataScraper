@@ -13,4 +13,4 @@ services:
     volumes:
       - "${DATA_DIR}/mongodb:/data/db"
     ports:
-      - "27017:27017"
+      - "${MONGOPORT}:27017"

@@ -9,7 +9,7 @@ class GetClient:
         self.client=None
 
     def __enter__(self):
-        self.client = MongoClient(username=settings.MONGOUSER, password=settings.MONGOPWD)
+        self.client = MongoClient(host=settings.MONGOURI, username=settings.MONGOUSER, password=settings.MONGOPWD)
         return self.client.cen_store.records
     
     def __exit__(self, *args, **kwargs):
